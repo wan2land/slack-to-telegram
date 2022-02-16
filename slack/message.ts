@@ -34,17 +34,22 @@ export interface EventMessage {
   user: string;
   ts: string;
   team: string;
-  // blocks: [ { type: "rich_text", block_id: "", elements: [Array] } ],
+  blocks: BlockRoot[];
+  attachments: Attachment[];
 }
 
 export interface EventMessageNew extends EventMessage {
+  subtype: undefined;
+  bot_id?: string;
+  bot_profile?: BotProfile;
   channel: string;
-  channel_type: "channel";
-
   event_ts: string;
+  channel_type: "channel";
 }
 
 export interface EventMessageChanged {
+  bot_id?: string;
+  bot_profile?: BotProfile;
   type: "message";
   subtype: "message_changed";
   message: EventMessage & {
@@ -64,15 +69,72 @@ export interface EventMessageChanged {
 }
 
 export interface EventMessageDeleted {
+  bot_id?: string;
+  bot_profile?: BotProfile;
   type: "message";
   subtype: "message_deleted";
-  previous_message: EventMessage;
+  previous_message: EventMessage & {
+    edited?: { user: string; ts: string };
+  };
 
   channel: string;
-  channel_type: "channel";
-
   hidden: boolean;
-  ts: string;
-  event_ts: string;
   deleted_ts: string;
+  event_ts: string;
+  ts: string;
+  channel_type: "channel";
+}
+
+export type BlockRoot = BlockRichText;
+
+export interface BlockRichText {
+  type: "rich_text";
+  block_id: string;
+  element: BlockRichTextSection[];
+}
+
+export interface BlockRichTextSection {
+  type: "rich_text_section";
+  elements: BlockText[];
+}
+
+export interface BlockText {
+  type: "text";
+  text: string;
+}
+
+export interface BotProfile {
+  id: string;
+  deleted: boolean;
+  name: string;
+  updated: number;
+  app_id: string;
+  icons: {
+    image_36: string;
+    image_48: string;
+    image_72: string;
+  };
+  team_id: string;
+}
+
+export interface Attachment {
+  id: number;
+  footer_icon: string;
+  ts: number;
+  color: string;
+  fallback: string;
+  text: string;
+  title: string;
+  title_link: string;
+  callback_id: string;
+  footer: string;
+  mrkdwn_in: ("text")[];
+  actions: {
+    id: string;
+    name: string;
+    text: string;
+    type: string;
+    value: string;
+    style: string;
+  }[];
 }
