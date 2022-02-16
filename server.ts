@@ -1,6 +1,6 @@
 import { createVerifier } from "./slack/verify.ts";
 
-import { SlackMessage } from "./slack/message.ts";
+import { SlackMessage, SlackMessageEventCallback } from "./slack/message.ts";
 
 function response(body: string, status = 200) {
   return new Response(body, {
@@ -17,9 +17,13 @@ export interface CreateServerHandlerOptions {
   slackSigningSecret: string;
   telegramToken: string;
   telegramChatId: string;
-  match?: (message: SlackMessage) => boolean;
-  transform?: (message: SlackMessage) => string;
+  match?: (message: SlackMessageEventCallback) => boolean;
+  transform?: (message: SlackMessageEventCallback) => string;
 }
+
+const defaultMatcher = (message: SlackMessageEventCallback) => {
+  return message.event.type === "message" && !message.event.subtype;
+};
 
 export function createServerHandler(options: CreateServerHandlerOptions) {
   const verify = createVerifier(options.slackSigningSecret);
@@ -47,10 +51,9 @@ export function createServerHandler(options: CreateServerHandlerOptions) {
         return response(body.challenge);
       }
 
-      if (
-        body.type === "event_callback" && body.event.type === "message" &&
-        !body.event.subtype
-      ) {
+      const matcher = options.match ?? defaultMatcher;
+
+      if (body.type === "event_callback" && matcher(body)) {
         await fetch(
           `https://api.telegram.org/bot${options.telegramToken}/sendMessage`,
           {
@@ -68,7 +71,7 @@ export function createServerHandler(options: CreateServerHandlerOptions) {
         );
       }
 
-      console.log(JSON.stringify(body, null, "  "));
+      console.log(JSON.stringify(body));
 
       return response("pong");
     } catch (e) {
