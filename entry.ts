@@ -37,7 +37,7 @@ serve(async (req) => {
       return response(body.challenge);
     }
 
-    console.log("->", body);
+    console.log(JSON.stringify(body, null, "  "));
 
     return response("pong");
   } catch (e) {
