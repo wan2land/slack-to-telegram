@@ -9,10 +9,6 @@ function response(body: string, status = 200) {
   });
 }
 
-function escapeTelegramMarkdown(text: string) {
-  return text.replace(/_/g, "\\_").replace(/\*/g, "\\*");
-}
-
 export interface CreateServerHandlerOptions {
   slackSigningSecret: string;
   telegramToken: string;
@@ -25,8 +21,18 @@ const defaultMatcher = (message: SlackMessageEventCallback) => {
   return message.event.type === "message" && !message.event.subtype;
 };
 
+const defaultTransform = (message: SlackMessageEventCallback) => {
+  return [
+    "```json",
+    JSON.stringify(message.event, null, "  "),
+    "```",
+  ].join("\n");
+};
+
 export function createServerHandler(options: CreateServerHandlerOptions) {
   const verify = createVerifier(options.slackSigningSecret);
+  const matcher = options.match ?? defaultMatcher;
+  const transform = options.transform ?? defaultTransform;
 
   return async (req: Request): Promise<Response> => {
     if (req.method !== "POST") {
@@ -51,10 +57,8 @@ export function createServerHandler(options: CreateServerHandlerOptions) {
         return response(body.challenge);
       }
 
-      const matcher = options.match ?? defaultMatcher;
-
       if (body.type === "event_callback" && matcher(body)) {
-        await fetch(
+        const response = await fetch(
           `https://api.telegram.org/bot${options.telegramToken}/sendMessage`,
           {
             method: "POST",
@@ -63,12 +67,12 @@ export function createServerHandler(options: CreateServerHandlerOptions) {
               chat_id: options.telegramChatId,
               parse_mode: "markdown",
               disable_web_page_preview: true,
-              text: escapeTelegramMarkdown(
-                JSON.stringify(body.event, null, "  "),
-              ),
+              text: transform(body),
             }),
           },
         );
+
+        console.log("resp", response.status, await response.text());
       }
 
       console.log(JSON.stringify(body));
