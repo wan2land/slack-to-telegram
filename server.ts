@@ -13,6 +13,7 @@ export interface CreateServerHandlerOptions {
   slackSigningSecret: string;
   telegramToken: string;
   telegramChatId: string;
+  debug?: boolean;
   match?: (message: SlackMessageEventCallback) => boolean;
   transform?: (message: SlackMessageEventCallback) => string;
 }
@@ -57,29 +58,55 @@ export function createServerHandler(options: CreateServerHandlerOptions) {
         return response(body.challenge);
       }
 
-      if (body.type === "event_callback" && matcher(body)) {
-        const response = await fetch(
-          `https://api.telegram.org/bot${options.telegramToken}/sendMessage`,
-          {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              chat_id: options.telegramChatId,
-              parse_mode: "markdown",
-              disable_web_page_preview: true,
-              text: transform(body),
-            }),
-          },
-        );
+      if (body.type === "event_callback") {
+        if (options.debug) {
+          console.log(
+            `${
+              new Date().toLocaleString("en", { timeZone: "UTC" })
+            } [request] ${JSON.stringify(body)}`,
+          );
+        }
 
-        console.log("resp", response.status, await response.text());
+        const isMatched = matcher(body);
+        if (options.debug) {
+          console.log(
+            `${
+              new Date().toLocaleString("en", { timeZone: "UTC" })
+            } [matched] ${isMatched}`,
+          );
+        }
+
+        if (isMatched) {
+          const response = await fetch(
+            `https://api.telegram.org/bot${options.telegramToken}/sendMessage`,
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                chat_id: options.telegramChatId,
+                parse_mode: "markdown",
+                disable_web_page_preview: true,
+                text: transform(body),
+              }),
+            },
+          );
+          if (options.debug) {
+            console.log(
+              `${
+                new Date().toLocaleString("en", { timeZone: "UTC" })
+              } [telegram.response] ${
+                JSON.stringify({
+                  status: response.status,
+                  body: await response.text(),
+                })
+              }`,
+            );
+          }
+        }
       }
-
-      console.log(JSON.stringify(body));
-
       return response("pong");
     } catch (e) {
-      console.log(e);
+      console.error(e);
       return response("error", 500);
     }
   };
