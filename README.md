@@ -14,7 +14,10 @@
 
 **Telegram**
 
-1.
+1. https://t.me/botfather
+2. Create bot
+3. Copy token
+4. https://api.telegram.org/bot{token}/getUpdates?limit=10
 
 **Deno Deploy**
 
