@@ -1,8 +1,8 @@
 export type SlackMessage =
-  | SlacekMessageUrlVerification
+  | SlackMessageUrlVerification
   | SlackMessageEventCallback;
 
-export interface SlacekMessageUrlVerification {
+export interface SlackMessageUrlVerification {
   type: "url_verification";
   challenge: string;
   token: string; // Deprecated
@@ -85,7 +85,42 @@ export interface EventMessageDeleted {
   channel_type: "channel";
 }
 
-export type BlockRoot = BlockRichText;
+export interface EventMessageBotMessage {
+  type: "message";
+  subtype: "bot_message";
+  text: string;
+  bot_id: string;
+  blocks: BlockRoot[];
+
+  channel: string;
+  event_ts: string;
+  ts: string;
+  channel_type: "channel";
+}
+
+export type BlockRoot = BlockRichText | BlockSection;
+
+// https://api.slack.com/reference/block-kit/blocks#section
+export interface BlockSection {
+  type: "section";
+  block_id: string;
+  text: BlockTextObject;
+}
+
+// https://api.slack.com/reference/block-kit/composition-objects#text
+export type BlockTextObject = BlockMarkdown | BlockPlainText;
+
+export interface BlockMarkdown {
+  type: "mrkdwn";
+  text: string;
+  verbatim?: boolean;
+}
+
+export interface BlockPlainText {
+  type: "plain_text";
+  text: string;
+  emoji?: boolean;
+}
 
 export interface BlockRichText {
   type: "rich_text";
