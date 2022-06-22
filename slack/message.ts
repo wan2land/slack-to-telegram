@@ -24,7 +24,11 @@ export interface SlackMessageEventCallback {
   event_id: string;
   event_time: number;
   event_context: string;
-  event: EventMessageNew | EventMessageChanged | EventMessageDeleted;
+  event:
+    | EventMessageNew
+    | EventMessageChanged
+    | EventMessageDeleted
+    | EventMessageBotMessage;
 }
 
 export interface EventMessage {
